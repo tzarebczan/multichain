@@ -3,7 +3,7 @@ package bitcoincash_test
 import (
 	"context"
 
-	"github.com/renproject/multichain/chain/bitcoincash"
+	"github.com/tzarebczan/multichain/chain/bitcoincash"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

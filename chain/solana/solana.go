@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/renproject/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/address"
 	"github.com/renproject/pack"
 	"go.uber.org/zap"
 )

@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/renproject/multichain/api/account"
-	"github.com/renproject/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/account"
+	"github.com/tzarebczan/multichain/api/address"
 	"github.com/renproject/pack"
 
 	cliContext "github.com/cosmos/cosmos-sdk/client/context"

@@ -7,8 +7,8 @@ import (
 
 	filaddress "github.com/filecoin-project/go-address"
 	"github.com/multiformats/go-varint"
-	"github.com/renproject/multichain/api/address"
-	"github.com/renproject/multichain/chain/filecoin"
+	"github.com/tzarebczan/multichain/api/address"
+	"github.com/tzarebczan/multichain/chain/filecoin"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

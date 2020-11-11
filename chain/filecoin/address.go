@@ -2,7 +2,7 @@ package filecoin
 
 import (
 	filaddress "github.com/filecoin-project/go-address"
-	"github.com/renproject/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/address"
 )
 
 // AddressEncodeDecoder implements the address.EncodeDecoder interface

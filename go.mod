@@ -1,4 +1,4 @@
-module github.com/renproject/multichain
+module github.com/tzarebczan/multichain
 
 go 1.14
 

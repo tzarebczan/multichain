@@ -13,8 +13,8 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/codahale/blake2"
-	"github.com/renproject/multichain/api/utxo"
-	"github.com/renproject/multichain/chain/bitcoin"
+	"github.com/tzarebczan/multichain/api/utxo"
+	"github.com/tzarebczan/multichain/chain/bitcoin"
 	"github.com/renproject/pack"
 )
 

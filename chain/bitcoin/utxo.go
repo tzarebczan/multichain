@@ -11,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/renproject/multichain/api/utxo"
+	"github.com/tzarebczan/multichain/api/utxo"
 	"github.com/renproject/pack"
 )
 
