@@ -2,7 +2,7 @@ package cosmos
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tzarebczan/multichain/api/address"
+	"github.com/renproject/multichain/api/address"
 )
 
 // An Address is a public address that can be encoded/decoded to/from strings.

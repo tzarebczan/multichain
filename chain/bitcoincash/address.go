@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/bech32"
-	"github.com/tzarebczan/multichain/api/address"
+	"github.com/renproject/multichain/api/address"
 	"github.com/renproject/pack"
 	"golang.org/x/crypto/ripemd160"
 )

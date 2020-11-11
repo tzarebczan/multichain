@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing/quick"
 
-	"github.com/tzarebczan/multichain/chain/cosmos"
+	"github.com/renproject/multichain/chain/cosmos"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

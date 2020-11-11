@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"github.com/renproject/id"
-	"github.com/tzarebczan/multichain/chain/dogecoin"
+	"github.com/renproject/multichain/chain/dogecoin"
 )
 
 func main() {

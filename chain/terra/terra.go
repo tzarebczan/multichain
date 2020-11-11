@@ -1,8 +1,8 @@
 package terra
 
 import (
-	"github.com/tzarebczan/multichain/api/account"
-	"github.com/tzarebczan/multichain/chain/cosmos"
+	"github.com/renproject/multichain/api/account"
+	"github.com/renproject/multichain/chain/cosmos"
 	"github.com/terra-project/core/app"
 )
 

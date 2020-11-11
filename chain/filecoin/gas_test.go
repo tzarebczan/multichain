@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/tzarebczan/multichain/chain/filecoin"
+	"github.com/renproject/multichain/chain/filecoin"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

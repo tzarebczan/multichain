@@ -6,7 +6,7 @@ import (
 	"math"
 	"testing/quick"
 
-	"github.com/tzarebczan/multichain/chain/ethereum"
+	"github.com/renproject/multichain/chain/ethereum"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

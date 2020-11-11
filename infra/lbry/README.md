@@ -4,8 +4,8 @@
 
 ```bash
 $ go run keygen.go
-LBRY_PK=eagPs6RBxmTQyjni3K7vqPNBwjN4o5R8CEwP4eyHavMJMz29MCen
-LBRY_ADDRESS=smtdQvMJRLaWwNaFUjdBtFzUR4evxQJcB9
+LBRY_PK=cV9WB2d7VTCJkkJy5RrzkQvqtiFJvAXbL8XUte8YRBH9zG2u1LTu
+LBRY_ADDRESS=mufonb3XbgFWH6ayP84sz81x6rS9oCxvqR
 ```
 
 ## Build your docker container
@@ -18,5 +18,5 @@ docker build .
 
 ```bash
 # Regtest
-docker run -p 18332:18332 lbrycrd:latest "smtdQvMJRLaWwNaFUjdBtFzUR4evxQJcB9"
+docker run -p 18332:18332 lbrycrd:latest "mufonb3XbgFWH6ayP84sz81x6rS9oCxvqR"
 ```

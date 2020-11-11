@@ -1,8 +1,8 @@
 package terra_test
 
 import (
-	"github.com/tzarebczan/multichain"
-	"github.com/tzarebczan/multichain/chain/terra"
+	"github.com/renproject/multichain"
+	"github.com/renproject/multichain/chain/terra"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

@@ -6,7 +6,7 @@ package utxo
 import (
 	"context"
 
-	"github.com/tzarebczan/multichain/api/address"
+	"github.com/renproject/multichain/api/address"
 	"github.com/renproject/pack"
 )
 

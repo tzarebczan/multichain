@@ -12,8 +12,8 @@ import (
 	filtypes "github.com/filecoin-project/lotus/chain/types"
 	"github.com/ipfs/go-cid"
 	"github.com/renproject/id"
-	"github.com/tzarebczan/multichain"
-	"github.com/tzarebczan/multichain/chain/filecoin"
+	"github.com/renproject/multichain"
+	"github.com/renproject/multichain/chain/filecoin"
 	"github.com/renproject/pack"
 	"github.com/renproject/surge"
 

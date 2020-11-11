@@ -6,7 +6,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/tzarebczan/multichain/api/address"
+	"github.com/renproject/multichain/api/address"
 )
 
 // AddressEncodeDecoder implements the address.EncodeDecoder interface

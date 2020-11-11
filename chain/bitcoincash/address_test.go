@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/renproject/id"
-	"github.com/tzarebczan/multichain/api/address"
-	"github.com/tzarebczan/multichain/chain/bitcoincash"
+	"github.com/renproject/multichain/api/address"
+	"github.com/renproject/multichain/chain/bitcoincash"
 )
 
 var _ = Describe("Bitcoin Cash Address", func() {

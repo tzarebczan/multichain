@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing/quick"
 
-	"github.com/tzarebczan/multichain/chain/ethereum"
+	"github.com/renproject/multichain/chain/ethereum"
 	"github.com/renproject/surge"
 
 	. "github.com/onsi/ginkgo"

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/renproject/id"
-	"github.com/tzarebczan/multichain"
-	"github.com/tzarebczan/multichain/api/address"
-	"github.com/tzarebczan/multichain/chain/terra"
+	"github.com/renproject/multichain"
+	"github.com/renproject/multichain/api/address"
+	"github.com/renproject/multichain/chain/terra"
 	"github.com/renproject/pack"
 	"github.com/renproject/surge"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
