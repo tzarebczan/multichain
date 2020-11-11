@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/renproject/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/address"
 	"github.com/renproject/pack"
 	"github.com/renproject/surge"
 )

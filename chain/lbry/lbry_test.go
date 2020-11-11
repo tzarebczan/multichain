@@ -10,9 +10,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/renproject/id"
-	"github.com/renproject/multichain/api/address"
-	"github.com/renproject/multichain/api/utxo"
-	"github.com/renproject/multichain/chain/lbry"
+	"github.com/tzarebczan/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/utxo"
+	"github.com/tzarebczan/multichain/chain/lbry"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

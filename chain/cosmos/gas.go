@@ -3,7 +3,7 @@ package cosmos
 import (
 	"context"
 
-	"github.com/renproject/multichain/api/gas"
+	"github.com/tzarebczan/multichain/api/gas"
 	"github.com/renproject/pack"
 )
 

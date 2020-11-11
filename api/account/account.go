@@ -6,8 +6,8 @@ package account
 import (
 	"context"
 
-	"github.com/renproject/multichain/api/address"
-	"github.com/renproject/multichain/api/contract"
+	"github.com/tzarebczan/multichain/api/address"
+	"github.com/tzarebczan/multichain/api/contract"
 	"github.com/renproject/pack"
 )
 

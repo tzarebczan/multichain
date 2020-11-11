@@ -3,8 +3,8 @@ package solana_test
 import (
 	"context"
 
-	"github.com/renproject/multichain/api/address"
-	"github.com/renproject/multichain/chain/solana"
+	"github.com/tzarebczan/multichain/api/address"
+	"github.com/tzarebczan/multichain/chain/solana"
 	"github.com/renproject/pack"
 
 	. "github.com/onsi/ginkgo"

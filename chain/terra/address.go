@@ -1,6 +1,6 @@
 package terra
 
-import "github.com/renproject/multichain/chain/cosmos"
+import "github.com/tzarebczan/multichain/chain/cosmos"
 
 type (
 	// Address re-exports cosmos-compatible address
