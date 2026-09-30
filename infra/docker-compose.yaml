@@ -76,17 +76,13 @@ services:
       - "${DOGECOIN_ADDRESS}"
 
   #
-  # Ethereum
+  # Ethereum (EIP-1559 compatible)
   #
   ethereum:
     build:
       context: ./ethereum
     ports:
       - "0.0.0.0:8545:8545"
-    entrypoint:
-      - "./root/run.sh"
-      - "${ETHEREUM_MNEMONIC}"
-      - "${ETHEREUM_ADDRESS}"
 
   #
   # Fantom
@@ -96,10 +92,6 @@ services:
       context: ./fantom
     ports:
       - "0.0.0.0:18545:18545"
-    entrypoint:
-      - "./root/run.sh"
-      - "${FANTOM_MNEMONIC}"
-      - "${FANTOM_ADDRESS}"
 
   #
   # Filecoin
@@ -111,19 +103,6 @@ services:
       - "0.0.0.0:1234:1234"
     entrypoint:
       - "/root/run.sh"
-
-  #
-  # Solana
-  #
-  solana:
-    build:
-      context: ./solana
-    ports:
-      - "0.0.0.0:8899:8899"
-      - "0.0.0.0:8900:8900"
-      - "0.0.0.0:9900:9900"
-    entrypoint:
-      - "./root/run.sh"
 
   #
   # LBRY
@@ -160,3 +139,59 @@ services:
     entrypoint:
       - "./root/run.sh"
       - "${TERRA_ADDRESS}"
+
+  ##
+  ## Polygon
+  ##
+  polygon:
+    build:
+      context: ./polygon
+    ports:
+      - "0.0.0.0:28545:8545"
+    entrypoint:
+      - "./root/run.sh"
+
+  ##
+  ## Solana
+  ##
+  solana:
+    image: renbot/ren-solana:latest
+    ports:
+      - "0.0.0.0:8899-8900:8899-8900"
+
+  ##
+  ## Moonbeam
+  ##
+  moonbeam:
+    image: purestake/moonbeam:tutorial-v7
+    ports:
+      - "0.0.0.0:9944:9944"
+      - "0.0.0.0:9933:9933"
+    command: --dev --ws-external --rpc-external
+
+  #
+  # Avalanche
+  #
+  avalanche:
+    build:
+      context: ./avalanche
+    ports:
+      - "0.0.0.0:9650:9650"
+    entrypoint:
+      - "./run.sh"
+      - "${AVAX_USERNAME}"
+      - "${AVAX_PASSWORD}"
+      - "${AVAX_PK}"
+      - "${AVAX_ADDRESS}"
+      - "${C_AVAX_PK}"
+      - "${C_AVAX_HEX_ADDRESS}"
+      - "${C_AVAX_BECH32_ADDRESS}"
+
+  #
+  # Goerli (EIP-1559 compatible)
+  #
+  goerli:
+    build:
+      context: ./goerli
+    ports:
+      - "0.0.0.0:1545:8545"

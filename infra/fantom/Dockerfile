@@ -1,15 +1,23 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 
-RUN apt-get update --fix-missing
-RUN apt-get install --yes curl
+# Install dependencies
+RUN apt-get update -y
+RUN apt-get install -y build-essential git wget
 
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get install --yes nodejs
-RUN npm install -g ganache-cli
+# Install Go
+RUN wget -c https://golang.org/dl/go1.15.5.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go1.15.5.linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
 
-COPY run.sh /root/run.sh
-RUN chmod +x /root/run.sh
+# Build Opera
+WORKDIR /app
+RUN git clone https://github.com/Fantom-foundation/go-opera.git
+WORKDIR /app/go-opera
+RUN git checkout release/1.0.0-rc.4
+RUN make
+ENV PATH=$PATH:/app/go-opera/build
 
-EXPOSE 8545
+# Expose the default port of the JSON-RPC server
+EXPOSE 18545
 
-ENTRYPOINT ["./root/run.sh"]
+ENTRYPOINT [ "opera", "--fakenet", "1/1", "--http", "--http.api=eth,net", "--http.vhosts", "*", "--http.addr", "0.0.0.0" ]

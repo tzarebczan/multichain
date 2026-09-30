@@ -5,10 +5,14 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"math/big"
 	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing/quick"
@@ -19,28 +23,51 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cosmossdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/crypto"
 	filaddress "github.com/filecoin-project/go-address"
 	filtypes "github.com/filecoin-project/lotus/chain/types"
 	"github.com/renproject/id"
 	"github.com/renproject/multichain"
+	"github.com/renproject/multichain/api/account"
+	"github.com/renproject/multichain/chain/avalanche"
 	"github.com/renproject/multichain/chain/bitcoin"
 	"github.com/renproject/multichain/chain/bitcoincash"
-
-	// "github.com/renproject/multichain/chain/digibyte"
+	"github.com/renproject/multichain/chain/bsc"
 	"github.com/renproject/multichain/chain/dogecoin"
+	"github.com/renproject/multichain/chain/ethereum"
+	"github.com/renproject/multichain/chain/fantom"
 	"github.com/renproject/multichain/chain/filecoin"
 	"github.com/renproject/multichain/chain/lbry"
+	"github.com/renproject/multichain/chain/polygon"
 	"github.com/renproject/multichain/chain/terra"
 	"github.com/renproject/multichain/chain/zcash"
 	"github.com/renproject/pack"
 	"github.com/renproject/surge"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tyler-smith/go-bip39"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+)
+
+var (
+	testBTC   = flag.Bool("btc", false, "Pass this flag to test Bitcoin")
+	testBCH   = flag.Bool("bch", false, "Pass this flag to test Bitcoincash")
+	testDOGE  = flag.Bool("doge", false, "Pass this flag to test Dogecoin")
+	testFIL   = flag.Bool("fil", false, "Pass this flag to test Filecoin")
+	testETH   = flag.Bool("eth", false, "Pass this flag to test Ethereum")
+	testMATIC = flag.Bool("matic", false, "Pass this flag to test Polygon")
+	testAVAX  = flag.Bool("avax", false, "Pass this flag to test Avalanche")
+	testBSC   = flag.Bool("bsc", false, "Pass this flag to test Binance Smart Chain")
+	testFTM   = flag.Bool("ftm", false, "Pass this flag to test Fantom")
+	testLBC   = flag.Bool("lbc", false, "Pass this flag to test LBRY")
+	testLUNA  = flag.Bool("luna", false, "Pass this flag to test Terra")
+	testZEC   = flag.Bool("zec", false, "Pass this flag to test Zcash")
 )
 
 var _ = Describe("Multichain", func() {
@@ -55,6 +82,162 @@ var _ = Describe("Multichain", func() {
 	loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	logger, err := loggerConfig.Build()
 	Expect(err).ToNot(HaveOccurred())
+
+	// Populate the test flags by underlying asset chain.
+	testFlags := map[multichain.Chain]bool{}
+	testFlags[multichain.Bitcoin] = *testBTC
+	testFlags[multichain.BitcoinCash] = *testBCH
+	testFlags[multichain.Dogecoin] = *testDOGE
+	testFlags[multichain.Filecoin] = *testFIL
+	testFlags[multichain.Ethereum] = *testETH
+	testFlags[multichain.BinanceSmartChain] = *testBSC
+	testFlags[multichain.Polygon] = *testMATIC
+	testFlags[multichain.Avalanche] = *testAVAX
+	testFlags[multichain.Fantom] = *testFTM
+	testFlags[multichain.LBRY] = *testLBC
+	testFlags[multichain.Terra] = *testLUNA
+	testFlags[multichain.Zcash] = *testZEC
+
+	//
+	// Multichain Configs
+	//
+	Context("Multichain Declarations", func() {
+		Context("All supporting chains/assets are declared", func() {
+			accountChains := []struct {
+				chain multichain.Chain
+				asset multichain.Asset
+			}{
+				{
+					multichain.Arbitrum,
+					multichain.ArbETH,
+				},
+				{
+					multichain.Avalanche,
+					multichain.AVAX,
+				},
+				{
+					multichain.Fantom,
+					multichain.FTM,
+				},
+				{
+					multichain.Filecoin,
+					multichain.FIL,
+				},
+				{
+					multichain.Ethereum,
+					multichain.ETH,
+				},
+				{
+					multichain.BinanceSmartChain,
+					multichain.BNB,
+				},
+				{
+					multichain.Moonbeam,
+					multichain.GLMR,
+				},
+				{
+					multichain.Polygon,
+					multichain.MATIC,
+				},
+				{
+					multichain.Solana,
+					multichain.SOL,
+				},
+				{
+					multichain.Terra,
+					multichain.LUNA,
+				},
+				{
+					multichain.Goerli,
+					multichain.GETH,
+				},
+			}
+			utxoChains := []struct {
+				chain multichain.Chain
+				asset multichain.Asset
+			}{
+				{
+					multichain.Bitcoin,
+					multichain.BTC,
+				},
+				{
+					multichain.BitcoinCash,
+					multichain.BCH,
+				},
+				{
+					multichain.DigiByte,
+					multichain.DGB,
+				},
+				{
+					multichain.Dogecoin,
+					multichain.DOGE,
+				},
+				{
+					multichain.Zcash,
+					multichain.ZEC,
+				},
+			}
+
+			for _, accountChain := range accountChains {
+				accountChain := accountChain
+				Specify(fmt.Sprintf("Chain=%v, Asset=%v should be supported", accountChain.chain, accountChain.asset), func() {
+					Expect(accountChain.chain.IsAccountBased()).To(BeTrue())
+					Expect(accountChain.chain.ChainType()).To(Equal(multichain.ChainTypeAccountBased))
+					Expect(accountChain.chain.NativeAsset()).To(Equal(accountChain.asset))
+					Expect(accountChain.asset.ChainType()).To(Equal(multichain.ChainTypeAccountBased))
+					Expect(accountChain.asset.OriginChain()).To(Equal(accountChain.chain))
+				})
+			}
+			for _, utxoChain := range utxoChains {
+				utxoChain := utxoChain
+				Specify(fmt.Sprintf("Chain=%v, Asset=%v should be supported", utxoChain.chain, utxoChain.asset), func() {
+					Expect(utxoChain.chain.IsUTXOBased()).To(BeTrue())
+					Expect(utxoChain.chain.ChainType()).To(Equal(multichain.ChainTypeUTXOBased))
+					Expect(utxoChain.chain.NativeAsset()).To(Equal(utxoChain.asset))
+					Expect(utxoChain.asset.ChainType()).To(Equal(multichain.ChainTypeUTXOBased))
+					Expect(utxoChain.asset.OriginChain()).To(Equal(utxoChain.chain))
+				})
+			}
+		})
+
+		Context("Assets are declared appropriately", func() {
+			nativeAssets := []multichain.Asset{
+				multichain.ArbETH, multichain.AVAX, multichain.BNB, multichain.ETH,
+				multichain.FTM, multichain.GLMR, multichain.MATIC, multichain.SOL,
+			}
+			tokenAssets := []struct {
+				asset multichain.Asset
+				chain multichain.Chain
+			}{
+				{
+					multichain.DAI,
+					multichain.Ethereum,
+				},
+				{
+					multichain.REN,
+					multichain.Ethereum,
+				},
+				{
+					multichain.USDC,
+					multichain.Ethereum,
+				},
+			}
+
+			for _, asset := range nativeAssets {
+				asset := asset
+				Specify(fmt.Sprintf("Asset=%v should be supported", asset), func() {
+					Expect(asset.Type()).To(Equal(multichain.AssetTypeNative))
+				})
+			}
+			for _, asset := range tokenAssets {
+				asset := asset
+				Specify(fmt.Sprintf("Asset=%v should be supported", asset.asset), func() {
+					Expect(asset.asset.Type()).To(Equal(multichain.AssetTypeToken))
+					Expect(asset.asset.OriginChain()).To(Equal(asset.chain))
+				})
+			}
+		})
+	})
 
 	//
 	// ADDRESS API
@@ -361,41 +544,257 @@ var _ = Describe("Multichain", func() {
 		}{
 			{
 				func() (id.PrivKey, *id.PubKey, multichain.Address) {
+					mnemonic := os.Getenv("ETHEREUM_MNEMONIC")
+					if mnemonic == "" {
+						panic("ETHEREUM_MNEMONIC is undefined")
+					}
+					const ZERO uint32 = 0x80000000
+					path := []uint32{ZERO + 44, ZERO + 60, ZERO, 0, 0}
+					path[len(path)-1] = uint32(0)
+					seed := bip39.NewSeed(mnemonic, "")
+					key, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
+					Expect(err).NotTo(HaveOccurred())
+					for _, val := range path {
+						key, err = key.DeriveNonStandard(val)
+						if err != nil {
+							Expect(err).NotTo(HaveOccurred())
+						}
+					}
+					privKey, err := key.ECPrivKey()
+					if err != nil {
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					newKey := privKey.ToECDSA()
+					Expect(err).NotTo(HaveOccurred())
+					pk := (*id.PrivKey)(newKey)
+					address := multichain.Address(crypto.PubkeyToAddress(pk.PublicKey).Hex())
+					return *pk, pk.PubKey(), address
+				},
+				func(privKey id.PrivKey) multichain.Address {
+					return multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+				},
+				ethereum.DefaultClientRPCURL,
+				func() multichain.Address {
+					recipientKey := id.NewPrivKey()
+					return multichain.Address(crypto.PubkeyToAddress(recipientKey.PublicKey).Hex())
+				},
+				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+					client, err := ethereum.NewClient(string(rpcURL), big.NewInt(1337))
+					Expect(err).NotTo(HaveOccurred())
+					txBuilder := ethereum.NewTxBuilder(big.NewInt(1337))
+
+					return client, txBuilder
+				},
+				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+					amount := pack.NewU256FromU64(pack.U64(2000000))
+					gasLimit := pack.NewU256FromU64(pack.U64(1000000))
+					gasPrice := pack.NewU256FromU64(pack.U64(3000000000))
+					gasCap := pack.NewU256FromU64(pack.U64(100000000000))
+					payload := pack.NewBytes([]byte("multichain"))
+					return amount, gasLimit, gasPrice, gasCap, payload
+				},
+				multichain.Ethereum,
+			},
+			{
+				func() (id.PrivKey, *id.PubKey, multichain.Address) {
+					keyPath := filepath.Join(".", "infra", "polygon", "json-keystore")
+					keyjson, err := ioutil.ReadFile(fmt.Sprintf("%v", keyPath))
+					Expect(err).NotTo(HaveOccurred())
+					password := "password0"
+					keyStoreKey, err := keystore.DecryptKey(keyjson, password)
+					Expect(err).NotTo(HaveOccurred())
+					newKey := keyStoreKey.PrivateKey
+					pk := (*id.PrivKey)(newKey)
+					address := multichain.Address(crypto.PubkeyToAddress(pk.PublicKey).Hex())
+					return *pk, pk.PubKey(), address
+				},
+				func(privKey id.PrivKey) multichain.Address {
+					return multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+				},
+				polygon.DefaultClientRPCURL,
+				func() multichain.Address {
+					recipientKey := id.NewPrivKey()
+					return multichain.Address(crypto.PubkeyToAddress(recipientKey.PublicKey).Hex())
+				},
+				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+					client, err := polygon.NewClient(string(rpcURL), big.NewInt(15001))
+					Expect(err).NotTo(HaveOccurred())
+					txBuilder := polygon.NewTxBuilder(big.NewInt(15001))
+
+					return client, txBuilder
+				},
+				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+					amount := pack.NewU256FromU64(pack.U64(2000000))
+					gasLimit := pack.NewU256FromU64(pack.U64(1000000))
+					gasPrice := pack.NewU256FromU64(pack.U64(1000000000000))
+					gasCap := pack.NewU256FromInt(gasPrice.Int())
+					payload := pack.NewBytes([]byte("multichain"))
+					return amount, gasLimit, gasPrice, gasCap, payload
+				},
+				multichain.Polygon,
+			},
+			{
+				func() (id.PrivKey, *id.PubKey, multichain.Address) {
+					mnemonic := os.Getenv("BINANCE_MNEMONIC")
+					if mnemonic == "" {
+						panic("BINANCE_MNEMONIC is undefined")
+					}
+					const ZERO uint32 = 0x80000000
+					path := []uint32{ZERO + 44, ZERO + 60, ZERO, 0, 0}
+					path[len(path)-1] = uint32(0)
+					seed := bip39.NewSeed(mnemonic, "")
+					key, err := hdkeychain.NewMaster(seed, &chaincfg.MainNetParams)
+					Expect(err).NotTo(HaveOccurred())
+					for _, val := range path {
+						key, err = key.DeriveNonStandard(val)
+						if err != nil {
+							Expect(err).NotTo(HaveOccurred())
+						}
+					}
+					privKey, err := key.ECPrivKey()
+					if err != nil {
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					newKey := privKey.ToECDSA()
+					Expect(err).NotTo(HaveOccurred())
+					pk := (*id.PrivKey)(newKey)
+					address := multichain.Address(crypto.PubkeyToAddress(pk.PublicKey).Hex())
+					return *pk, pk.PubKey(), address
+				},
+				func(privKey id.PrivKey) multichain.Address {
+					return multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+				},
+				bsc.DefaultClientRPCURL,
+				func() multichain.Address {
+					recipientKey := id.NewPrivKey()
+					return multichain.Address(crypto.PubkeyToAddress(recipientKey.PublicKey).Hex())
+				},
+				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+					client, err := bsc.NewClient(string(rpcURL), big.NewInt(420))
+					Expect(err).NotTo(HaveOccurred())
+					txBuilder := bsc.NewTxBuilder(big.NewInt(420))
+
+					return client, txBuilder
+				},
+				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+					amount := pack.NewU256FromU64(pack.U64(2000000))
+					gasLimit := pack.NewU256FromU64(pack.U64(100000))
+					gasPrice := pack.NewU256FromU64(pack.U64(1))
+					gasCap := pack.NewU256FromInt(gasPrice.Int())
+					payload := pack.NewBytes([]byte("multichain"))
+					return amount, gasLimit, gasPrice, gasCap, payload
+				},
+				multichain.BinanceSmartChain,
+			},
+			{
+				func() (id.PrivKey, *id.PubKey, multichain.Address) {
+					pk := os.Getenv("C_AVAX_PK")
+					if pk == "" {
+						panic("C_AVAX_PK is undefined")
+					}
+					pk = strings.TrimPrefix(pk, "0x")
+					key, err := crypto.HexToECDSA(pk)
+					privKey := (*id.PrivKey)(key)
+					Expect(err).NotTo(HaveOccurred())
+					address := multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+					return *privKey, privKey.PubKey(), address
+				},
+				func(privKey id.PrivKey) multichain.Address {
+					return multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+				},
+				avalanche.DefaultClientRPCURL,
+				func() multichain.Address {
+					recipientKey := id.NewPrivKey()
+					return multichain.Address(crypto.PubkeyToAddress(recipientKey.PublicKey).Hex())
+				},
+				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+					client, err := avalanche.NewClient(string(rpcURL), big.NewInt(43112))
+					Expect(err).NotTo(HaveOccurred())
+					txBuilder := avalanche.NewTxBuilder(big.NewInt(43112))
+					return client, txBuilder
+				},
+				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+					amount := pack.NewU256FromU64(pack.U64(1))
+					gasLimit := pack.NewU256FromU64(pack.U64(100000))
+					gasPrice := pack.NewU256FromU64(pack.U64(225000000000))
+					gasCap := pack.NewU256FromInt(gasPrice.Int())
+					payload := pack.NewBytes([]byte(""))
+					return amount, gasLimit, gasPrice, gasCap, payload
+				},
+				multichain.Avalanche,
+			},
+			{
+				func() (id.PrivKey, *id.PubKey, multichain.Address) {
+					pk := os.Getenv("FANTOM_PK")
+					if pk == "" {
+						panic("FANTOM_PK is undefined")
+					}
+					key, err := crypto.HexToECDSA(pk)
+					privKey := (*id.PrivKey)(key)
+					Expect(err).NotTo(HaveOccurred())
+					address := multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+					return *privKey, privKey.PubKey(), address
+				},
+				func(privKey id.PrivKey) multichain.Address {
+					return multichain.Address(crypto.PubkeyToAddress(privKey.PublicKey).Hex())
+				},
+				fantom.DefaultClientRPCURL,
+				func() multichain.Address {
+					recipientKey := id.NewPrivKey()
+					return multichain.Address(crypto.PubkeyToAddress(recipientKey.PublicKey).Hex())
+				},
+				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+					client, err := fantom.NewClient(string(rpcURL), big.NewInt(4003))
+					Expect(err).NotTo(HaveOccurred())
+					txBuilder := fantom.NewTxBuilder(big.NewInt(4003))
+
+					return client, txBuilder
+				},
+				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+					amount := pack.NewU256FromU64(pack.U64(2000000))
+					gasLimit := pack.NewU256FromU64(pack.U64(1000000))
+					gasPrice := pack.NewU256FromU64(pack.U64(1000000000))
+					gasCap := pack.NewU256FromInt(gasPrice.Int())
+					payload := pack.NewBytes([]byte("multichain"))
+					return amount, gasLimit, gasPrice, gasCap, payload
+				},
+				multichain.Fantom,
+			},
+			{
+				senderEnv: func() (id.PrivKey, *id.PubKey, multichain.Address) {
 					pkEnv := os.Getenv("TERRA_PK")
 					if pkEnv == "" {
 						panic("TERRA_PK is undefined")
 					}
 					pkBytes, err := hex.DecodeString(pkEnv)
 					Expect(err).NotTo(HaveOccurred())
-					var pk secp256k1.PrivKeySecp256k1
-					copy(pk[:], pkBytes)
-					addrEncoder := terra.NewAddressEncoder()
-					senderAddr, err := addrEncoder.EncodeAddress(multichain.RawAddress(pack.Bytes(pk.PubKey().Address())))
+					pk := secp256k1.PrivKey{Key: pkBytes}
+					addrEncodeDecoder := terra.NewAddressEncodeDecoder()
+					senderAddr, err := addrEncodeDecoder.EncodeAddress(pk.PubKey().Address().Bytes())
 					Expect(err).NotTo(HaveOccurred())
 					senderPrivKey := id.PrivKey{}
 					err = surge.FromBinary(&senderPrivKey, pkBytes)
 					Expect(err).NotTo(HaveOccurred())
 					return senderPrivKey, senderPrivKey.PubKey(), senderAddr
 				},
-				func(privKey id.PrivKey) multichain.Address {
+				privKeyToAddr: func(privKey id.PrivKey) multichain.Address {
 					pkBytes, err := surge.ToBinary(privKey)
 					Expect(err).NotTo(HaveOccurred())
-					var pk secp256k1.PrivKeySecp256k1
-					copy(pk[:], pkBytes)
-					addrEncoder := terra.NewAddressEncoder()
-					addr, err := addrEncoder.EncodeAddress(multichain.RawAddress(pack.Bytes(pk.PubKey().Address())))
+					pk := secp256k1.PrivKey{Key: pkBytes}
+					addrEncodeDecoder := terra.NewAddressEncodeDecoder()
+					addr, err := addrEncodeDecoder.EncodeAddress(pk.PubKey().Address().Bytes())
 					Expect(err).NotTo(HaveOccurred())
 					return addr
 				},
-				"http://127.0.0.1:26657",
-				func() multichain.Address {
+				rpcURL: "http://127.0.0.1:26657",
+				randomRecipientAddr: func() multichain.Address {
 					recipientKey := secp256k1.GenPrivKey()
-					addrEncoder := terra.NewAddressEncoder()
-					recipient, err := addrEncoder.EncodeAddress(multichain.RawAddress(pack.Bytes(recipientKey.PubKey().Address())))
-					Expect(err).NotTo(HaveOccurred())
+					recipient := multichain.Address(cosmossdk.AccAddress(recipientKey.PubKey().Address()).String())
 					return recipient
 				},
-				func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
+				initialise: func(rpcURL pack.String) (multichain.AccountClient, multichain.AccountTxBuilder) {
 					client := terra.NewClient(
 						terra.DefaultClientOptions().
 							WithHost(rpcURL).
@@ -409,7 +808,7 @@ var _ = Describe("Multichain", func() {
 
 					return client, txBuilder
 				},
-				func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
+				txParams: func(_ multichain.AccountClient) (pack.U256, pack.U256, pack.U256, pack.U256, pack.Bytes) {
 					amount := pack.NewU256FromU64(pack.U64(2000000))
 					gasLimit := pack.NewU256FromU64(pack.U64(100000))
 					gasPrice := pack.NewU256FromU64(pack.U64(1))
@@ -417,7 +816,7 @@ var _ = Describe("Multichain", func() {
 					payload := pack.NewBytes([]byte("multichain"))
 					return amount, gasLimit, gasPrice, gasCap, payload
 				},
-				multichain.Terra,
+				chain: multichain.Terra,
 			},
 			{
 				func() (id.PrivKey, *id.PubKey, multichain.Address) {
@@ -497,10 +896,16 @@ var _ = Describe("Multichain", func() {
 
 		for _, accountChain := range accountChainTable {
 			accountChain := accountChain
+			if !testFlags[accountChain.chain] {
+				continue
+			}
+
 			Context(fmt.Sprintf("%v", accountChain.chain), func() {
 				Specify("build, broadcast and fetch tx", func() {
 					// Load private key and the associated address.
 					senderPrivKey, senderPubKey, senderAddr := accountChain.senderEnv()
+					senderPubKeyBytes, err := surge.ToBinary(senderPubKey)
+					Expect(err).NotTo(HaveOccurred())
 
 					// Get a random recipient address.
 					recipientAddr := accountChain.randomRecipientAddr()
@@ -508,62 +913,68 @@ var _ = Describe("Multichain", func() {
 					// Initialise the account chain's client, and possibly get a nonce for
 					// the sender.
 					accountClient, txBuilder := accountChain.initialise(accountChain.rpcURL)
+					sendTx := func() (pack.Bytes, account.Tx) {
+						// Get the appropriate nonce for sender.
+						nonce, err := accountClient.AccountNonce(ctx, senderAddr)
+						Expect(err).NotTo(HaveOccurred())
 
-					// Get the appropriate nonce for sender.
-					nonce, err := accountClient.AccountNonce(ctx, senderAddr)
-					Expect(err).NotTo(HaveOccurred())
+						// Build a transaction.
+						amount, gasLimit, gasPrice, gasCap, payload := accountChain.txParams(accountClient)
 
-					// Build a transaction.
-					amount, gasLimit, gasPrice, gasCap, payload := accountChain.txParams(accountClient)
+						accountTx, err := txBuilder.BuildTx(
+							ctx,
+							senderPubKey,
+							recipientAddr,
+							amount, nonce, gasLimit, gasPrice, gasCap,
+							payload,
+						)
+						Expect(err).NotTo(HaveOccurred())
 
-					accountTx, err := txBuilder.BuildTx(
-						ctx,
-						multichain.Address(senderAddr),
-						recipientAddr,
-						amount, nonce, gasLimit, gasPrice, gasCap,
-						payload,
-					)
-					Expect(err).NotTo(HaveOccurred())
+						// Get the transaction bytes and sign them.
+						sighashes, err := accountTx.Sighashes()
+						Expect(err).NotTo(HaveOccurred())
+						hash := id.Hash(sighashes[0])
+						sig, err := senderPrivKey.Sign(&hash)
+						Expect(err).NotTo(HaveOccurred())
+						sigBytes, err := surge.ToBinary(sig)
+						Expect(err).NotTo(HaveOccurred())
+						txSignature := pack.Bytes65{}
+						copy(txSignature[:], sigBytes)
+						err = accountTx.Sign(
+							[]pack.Bytes65{txSignature},
+							pack.NewBytes(senderPubKeyBytes),
+						)
+						Expect(err).NotTo(HaveOccurred())
 
-					// Get the transaction bytes and sign them.
-					sighashes, err := accountTx.Sighashes()
-					Expect(err).NotTo(HaveOccurred())
-					hash := id.Hash(sighashes[0])
-					sig, err := senderPrivKey.Sign(&hash)
-					Expect(err).NotTo(HaveOccurred())
-					sigBytes, err := surge.ToBinary(sig)
-					Expect(err).NotTo(HaveOccurred())
-					txSignature := pack.Bytes65{}
-					copy(txSignature[:], sigBytes)
-					senderPubKeyBytes, err := surge.ToBinary(senderPubKey)
-					Expect(err).NotTo(HaveOccurred())
-					err = accountTx.Sign(
-						[]pack.Bytes65{txSignature},
-						pack.NewBytes(senderPubKeyBytes),
-					)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Submit the transaction to the account chain.
-					txHash := accountTx.Hash()
-					err = accountClient.SubmitTx(ctx, accountTx)
-					Expect(err).NotTo(HaveOccurred())
-					logger.Debug("submit tx", zap.String("from", string(senderAddr)), zap.String("to", string(recipientAddr)), zap.Any("txHash", txHash))
-
+						// Submit the transaction to the account chain.
+						txHash := accountTx.Hash()
+						err = accountClient.SubmitTx(ctx, accountTx)
+						Expect(err).NotTo(HaveOccurred())
+						logger.Debug("submit tx", zap.String("from", string(senderAddr)), zap.String("to", string(recipientAddr)), zap.Any("txHash", txHash))
+						return txHash, accountTx
+					}
+					txHash, accountTx := sendTx()
+					if accountChain.chain == multichain.Avalanche {
+						time.Sleep(5 * time.Second)
+						sendTx()
+					}
 					// Wait slightly before we query the chain's node.
 					time.Sleep(time.Second)
 
 					for {
 						// Loop until the transaction has at least a few confirmations.
 						tx, confs, err := accountClient.Tx(ctx, txHash)
-						if err == nil {
+						if err == nil && confs > 0 {
 							Expect(confs.Uint64()).To(BeNumerically(">", 0))
-							Expect(tx.Value()).To(Equal(amount))
-							Expect(tx.From()).To(Equal(senderAddr))
-							Expect(tx.To()).To(Equal(recipientAddr))
-							Expect(tx.Value()).To(Equal(amount))
+							Expect(tx.Value()).To(Equal(accountTx.Value()))
+							Expect(tx.From()).To(Equal(accountTx.From()))
+							Expect(tx.To()).To(Equal(accountTx.To()))
+							// FIXME: Filecoin signed message hash is different, so we ignore this check for filecoin. Appropriate check should be added for Filecoin.
+							if accountChain.chain != multichain.Filecoin {
+								Expect(tx.Hash()).To(Equal(accountTx.Hash()))
+							}
 							break
 						}
-
 						// wait and retry querying for the transaction
 						time.Sleep(5 * time.Second)
 					}
@@ -720,6 +1131,10 @@ var _ = Describe("Multichain", func() {
 
 		for _, utxoChain := range utxoChainTable {
 			utxoChain := utxoChain
+			if !testFlags[utxoChain.chain] {
+				continue
+			}
+
 			Context(fmt.Sprintf("%v", utxoChain.chain), func() {
 				Specify("(P2PKH) build, broadcast and fetch tx", func() {
 					// Load private key.

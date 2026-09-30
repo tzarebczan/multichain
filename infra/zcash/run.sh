@@ -8,8 +8,9 @@ zcashd \
   -nuparams=76b809bb:20  \
   -nuparams=2bb40e60:30  \
   -nuparams=f5b9230b:40  \
-  -nuparams=e9ff75a6:50
-sleep 10
+  -nuparams=e9ff75a6:50  \
+  -nuparams=c2d6d0b4:60
+sleep 20
 
 echo "ZCASH_ADDRESS=$ADDRESS"
 

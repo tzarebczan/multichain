@@ -56,6 +56,9 @@ func (txBuilder TxBuilder) BuildTx(inputs []utxo.Input, recipients []utxo.Recipi
 		if err != nil {
 			return nil, err
 		}
+		if !addr.IsForNet(txBuilder.params) {
+			return nil, fmt.Errorf("addr of a different network")
+		}
 		script, err := txscript.PayToAddrScript(addr)
 		if err != nil {
 			return nil, err
@@ -183,7 +186,7 @@ func (tx *Tx) Sign(signatures []pack.Bytes65, pubKey pack.Bytes) error {
 				continue
 			}
 		} else {
-			if txscript.IsPayToWitnessScriptHash(sigScript) || txscript.IsPayToWitnessScriptHash(sigScript) {
+			if txscript.IsPayToWitnessPubKeyHash(sigScript) || txscript.IsPayToWitnessScriptHash(sigScript) {
 				tx.msgTx.TxIn[i].Witness = wire.TxWitness([][]byte{append(signature.Serialize(), byte(txscript.SigHashAll)), pubKey, sigScript})
 				continue
 			}

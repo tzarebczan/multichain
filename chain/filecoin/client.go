@@ -8,9 +8,10 @@ import (
 	filaddress "github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/filecoin-project/go-state-types/crypto"
-	"github.com/filecoin-project/lotus/api"
 	filclient "github.com/filecoin-project/lotus/api/client"
+	"github.com/filecoin-project/lotus/api/v0api"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/specs-actors/actors/builtin"
 	"github.com/ipfs/go-cid"
 	"github.com/renproject/multichain/api/account"
 	"github.com/renproject/multichain/api/address"
@@ -66,7 +67,7 @@ func (opts ClientOptions) WithAuthToken(authToken pack.String) ClientOptions {
 // RPC client instance.
 type Client struct {
 	opts   ClientOptions
-	node   api.FullNode
+	node   v0api.FullNode
 	closer jsonrpc.ClientCloser
 }
 
@@ -77,7 +78,7 @@ func NewClient(opts ClientOptions) (*Client, error) {
 		requestHeaders.Add(AuthorizationKey, opts.AuthToken)
 	}
 
-	node, closer, err := filclient.NewFullNodeRPC(context.Background(), opts.RPCURL, requestHeaders)
+	node, closer, err := filclient.NewFullNodeRPCV0(context.Background(), opts.RPCURL, requestHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +119,9 @@ func (client *Client) Tx(ctx context.Context, txID pack.Bytes) (account.Tx, pack
 	if messageLookup.Receipt.ExitCode.IsError() {
 		return nil, pack.NewU64(0), fmt.Errorf("executing transaction: %v", messageLookup.Receipt.ExitCode.String())
 	}
+	if !messageLookup.Message.Equals(msgID) {
+		return nil, pack.U64(0), fmt.Errorf("searching state for txid: expected %v, got %v", msgID, messageLookup.Message)
+	}
 
 	// get the most recent tipset and its height
 	chainHead, err := client.LatestBlock(ctx)
@@ -133,6 +137,11 @@ func (client *Client) Tx(ctx context.Context, txID pack.Bytes) (account.Tx, pack
 	msg, err := client.node.ChainGetMessage(ctx, msgID)
 	if err != nil {
 		return nil, pack.NewU64(0), fmt.Errorf("getting txid %v from chain: %v", msgID, err)
+	}
+
+	// support `Send` method for now
+	if msg.Method != builtin.MethodSend {
+		return nil, pack.NewU64(0), fmt.Errorf("unsupport tx method, expect `%v`, got `%v`", builtin.MethodSend, msg.Method)
 	}
 
 	return &Tx{msg: *msg}, pack.NewU64(confs), nil
